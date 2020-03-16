@@ -1,0 +1,336 @@
+
+1.4. cURL: Your Command Line Friend
+
+The curl utility is a command line tool available on Unix, Linux, Mac OS X, Windows, and many other platforms. curl provides easy access to the HTTP protocol (among others) directly from the command line and is therefore an ideal way of interacting with CouchDB over the HTTP REST API.
+
+For simple GET requests you can supply the URL of the request. For example, to get the database information:
+
+shell> curl http://admin:password@127.0.0.1:5984
+
+This returns the database information (formatted in the output below for clarity):
+
+{
+  "couchdb": "Welcome",
+  "version": "3.0.0",
+  "git_sha": "83bdcf693",
+  "uuid": "56f16e7c93ff4a2dc20eb6acc7000b71",
+  "features": [
+    "access-ready",
+    "partitioned",
+    "pluggable-storage-engines",
+    "reshard",
+    "scheduler"
+  ],
+  "vendor": {
+    "name": "The Apache Software Foundation"
+  }
+}
+
+Note
+
+For some URLs, especially those that include special characters such as ampersand, exclamation mark, or question mark, you should quote the URL you are specifying on the command line. For example:
+
+shell> curl 'http://couchdb:5984/_uuids?count=5'
+
+Note
+
+On Microsoft Windows, use double-quotes anywhere you see single-quotes in the following examples. Use doubled double-quotes (“”) anywhere you see single quotes. For example, if you see:
+
+shell> curl -X PUT 'http:/127.0.0.1:5984/demo/doc' -d '{"motto": "I love gnomes"}'
+
+you should replace it with:
+
+shell> curl -X PUT "http://127.0.0.1:5984/demo/doc" -d "{""motto"": ""I love gnomes""}"
+
+If you prefer, ^" and \" may be used to escape the double-quote character in quoted strings instead.
+
+You can explicitly set the HTTP command using the -X command line option. For example, when creating a database, you set the name of the database in the URL you send using a PUT request:
+
+shell> curl -X PUT http://user:pass@127.0.0.1:5984/demo
+{"ok":true}
+
+But to obtain the database information you use a GET request (with the return information formatted for clarity):
+
+shell> curl -X GET http://user:pass@127.0.0.1:5984/demo
+{
+    "compact_running" : false,
+    "doc_count" : 0,
+    "db_name" : "demo",
+    "purge_seq" : 0,
+    "committed_update_seq" : 0,
+    "doc_del_count" : 0,
+    "disk_format_version" : 5,
+    "update_seq" : 0,
+    "instance_start_time" : "0",
+    "disk_size" : 79
+}
+
+For certain operations, you must specify the content type of request, which you do by specifying the Content-Type header using the -H command-line option:
+
+shell> curl -H 'Content-Type: application/json' http://127.0.0.1:5984/_uuids
+
+You can also submit ‘payload’ data, that is, data in the body of the HTTP request using the -d option. This is useful if you need to submit JSON structures, for example document data, as part of the request. For example, to submit a simple document to the demo database:
+
+shell> curl -H 'Content-Type: application/json' \
+            -X POST http://user:pass@127.0.0.1:5984/demo \
+            -d '{"company": "Example, Inc."}'
+{"ok":true,"id":"8843faaf0b831d364278331bc3001bd8",
+ "rev":"1-33b9fbce46930280dab37d672bbc8bb9"}
+
+In the above example, the argument after the -d option is the JSON of the document we want to submit.
+
+The document can be accessed by using the automatically generated document ID that was returned:
+
+shell> curl -X GET http://user:pass@127.0.0.1:5984/demo/8843faaf0b831d364278331bc3001bd8
+{"_id":"8843faaf0b831d364278331bc3001bd8",
+ "_rev":"1-33b9fbce46930280dab37d672bbc8bb9",
+ "company":"Example, Inc."}
+
+The API samples in the API Basics show the HTTP command, URL and any payload information that needs to be submitted (and the expected return value). All of these examples can be reproduced using curl with the command-line examples shown above.
+FOSS4G 2020 in Calgary is the annual international gathering of developers and users of open source geospatial software : mapping, location analysis, spatial statistics, remote sensing, data visualization and more.
+Community Ad
+
+© Copyright 2020, Apache Software Foundation. CouchDB® is a registered trademark of the Apache Software Foundation. Revision 644e8d7e.
+Built with Sphinx using a theme provided by Read the Docs. 
+
+XXXXXXXXXXXX
+
+{
+  "views": {
+    "all": {
+      "map": "function(doc) { emit(doc.title, doc) }",
+    }
+  }
+}
+
+We can save this into a javascript file, upload it to CouchDB, and save it as design document to create the view. For example, using curl:
+
+curl -X PUT @docs_view.js 'http://localhost:5984/lullabot/_design/[your_design_doc]' 
+
+In this case, we are making a PUT request because a new design document is being created at http://localhost:5984/lullabot/_design/docs. If the request was successful we get this response:
+
+{"ok":true,"id":"_design/docs","rev":"1-485d01ba401d41a9e922780eca73a384"}
+
+You can check on the design document by retrieving it:
+
+curl -X GET 'http://localhost:5984/lullabot_1/_design/[your_design_doc]'
+
+{
+  "_id":"_design/docs_1",
+  "_rev":"1-485d01ba401d41a9e922780eca73a384",
+  "views":{"all":{"map":"function(doc) { emit(doc.title, doc) }"}}
+}
+
+The Basic View
+
+To start with, as an example, we will use the following document structure for storing a speaker's conference events:
+
+{
+  events: [{
+    title: "DrupalCon Barcelona 2015",
+    subtitle: "Monday 21st-25th September 2015 — Barcelona",
+    role: "speaking",
+    link: "http://lanyrd.com/2015/drupalcon-barcelona/",
+    location: "Barcelona, Spain",
+    start_date: 1442808000,
+    end_date: 1443153600
+  }, {
+    title: "ZendCon 2015",
+    subtitle: "Monday 19th-22nd October 2015 — Las Vegas",
+    role: "attending",
+    link: "http://lanyrd.com/2015/zendcon/",
+    location: "Las Vegas, United States",
+    start_date: 1445227200,
+    end_date: 1445486400
+  }],
+  speaker: {
+    name: "Joe Shindelar",
+    headshot: {
+      uri: "bio_image/dsc_0272.jpg",
+      mime: "image/jpeg",
+    },
+    link: "who-we-are/joe-shindelar"
+  },
+  type: "speaker"
+}
+
+To get a list of all the speakers, the map function looks like this:
+
+function(doc) {
+  if (doc.type && doc.type == 'speaker') {
+    emit(doc.speaker.name, doc);
+  }
+}
+
+When we query the database using a view for the first time, each record in the database is run through the map function. This only happens once when the view is first run so that the database can be indexed and stored in a B-tree (Further reading on performance can be found here). The emit() function outputs a key and the value, which we specify as the first and second parameter respectively. In this case, the key is the speaker's name and the value is the entire document. Here we also check if the document being returned is the type speaker so that only speaker documents are returned.
+
+Each view comes with a neat way to access it via the REST API. The views can be retrieved at a URL that looks like this: /[your_database]/_design/[your_design_doc]/_view/[your_view]. The view we just created is accessed at http://localhost:5984/lullabot/_design/docs/_view/speakers.
+
+To query the above view we can send a GET request using curl:
+
+curl http://localhost:5984/lullabot/_design/docs/_view/speakers
+
+This returns a list of speakers with their names as the key:
+
+{
+  "total_rows": 22,
+  "offset": 0,
+  "rows": [{
+    "id": "84e77231cae12a572cc6724241004f43",
+    "key": "Angus Mak",
+    "value": {
+      "_id": "84e77231cae12a572cc6724241004f43",
+      "_rev": "6-5f9bee7b6b2c428657fdc8b2a7d5dcea",
+      "events": [...],
+      "username": "makangus",
+      "speaker": {... },
+      "type": "speaker"
+    }
+  }, {
+    "id": "84e77231cae12a572cc6724241001f47",
+    "key": "Jared Ponchot",
+    "value": {
+      "_id": "84e77231cae12a572cc6724241001f47",
+      "_rev": "6-87ee7de4b615a75dc786a85367c5e445",
+      "events": [...],
+      "username": "jponch",
+      "speaker": {... },
+      "type": "speaker",
+    }
+  }]
+}
+
+Querying a Document Set
+
+Now that we've nailed down a simple view, we can look at an example of how to query it. Suppose we want to display a list of events a speaker is attending. We would need to query for their particular speaker record. As the map function above returns the speaker's name as the key, we can easily pass the in the query parameter when we are making our request:
+
+curl http://localhost:5984/lullabot/_design/docs/_view/speakers?startkey=['Angus Mak']&&endkey=['Angus Mak']
+
+Here we have used the startkey and endkey parameters. Under the hood, the view is stored in a tree structure, when we specify a startkey, it tells CouchDB the position to start looking. If we have an endkey defined, the lookup will stop when it hits the endkey. In this case, the start and end keys are the same, so we return just this record as there is only one match.
+Building more complex queries
+
+So a straightforward display of each record is simple enough, let’s complicate matters with a real scenario. For the Upcoming Talks page, we want to display a list of all talks that staff at Lullabot are presenting in chronological order.
+
+Upcoming talks page
+The lullabot.com upcoming talks page
+
+The problem is that each event does not have its own record but is stored as an array as part of the speaker record.
+
+Here is the map function:
+
+function(doc) {
+  if (typeof doc.type !== 'undefined' && doc.type === 'speakers') {
+    doc.events.forEach(function(event) {
+      emit([event.role, event.session_date, event.title], {
+        event: event,
+        speaker: doc.speaker.name
+      });
+    });
+  }
+}
+
+To solve this problem, we iterate over all the events listed in each speaker record and output a result for each event. The resulting objects contain both the event and speaker objects. The key is a composite one made up of the role, event title, and session date. The fields in the key have been carefully chosen for the following reasons:
+
+    We want to be able to order the sessions chronologically, so the session_date was included.
+    We would also like to filter by whether or not a speaker is just attending or speaking at an event.
+
+Here is a resulting row from the view with each event displayed as it’s own result row. A key/value pair is produced for each event:
+
+{
+  "id": "84e77231cae12a572cc6724241004f43",
+  "key": ["attending", 1442808000, "DrupalCon Barcelona 2015"],
+  "value": {
+    "id": "84e77231cae12a572cc6724241004f43",
+    "event": {
+      "title": "DrupalCon Barcelona 2015",
+      "subtitle": "Monday 21st-25th September 2015 — Barcelona",
+      "role": "attending",
+      "link": "http://lanyrd.com/2015/drupalcon-barcelona/",
+      "location": "Barcelona, Spain",
+      "start_date": 1442808000,
+      "end_date": 1443153600
+    },
+    "speaker": "Angus Mak"
+  }
+}
+
+To display just the speaking events, the query looks like this:
+
+curl http://localhost:5984/lullabot/_design/docs/_view/upcoming_talks?startkey=["speaking"]&endkey=["speaking",{},{}]
+
+Since we are only using one part of the key to filter with, we need to also specify the values of the other two parts of the key in the end key. As we are only interested in filtering by role, we can use wildcards {} for the other parts.
+
+As a further example of querying using a compound key, if we want to filter all the speaking events between a date range, the query is as follows:
+
+curl http://localhost:5984/lullabot/_design/docs/_view/upcoming_talks?startkey=["speaking",1442808000]&endkey=["speaking",1444968000,{}]
+
+Here we are filtering between 21st Sept 2015 - 16th Oct 2015. When we are querying using a compound key, the order of each key part is important. We can only filter in the order of each part of the key. For example in this case, we can filter by [role], [role, session date] and [role, session date, event title], but we cannot filter by [role, event title].
+Sorting
+
+On the Upcoming Talks page, we would like to display the most recent speaking session first. We can use the descending parameter.
+
+curl http://localhost:5984/lullabot/_design/docs/_view/upcoming_talks?startkey=["speaking",1444968000,{}]&endkey=["speaking",1442808000]&descending=true
+
+Notice that the start and end keys have been flipped compared to the previous query example. This is because when we sort in a descending order we reverse the position in which we begin searching. The example below displaying a list of keys illustrates this.
+
+["speaking",1431359982,"DrupalCon Los Angeles 2015"]
+["speaking",1442808000,"DrupalCon Barcelona 2015"] // End position here
+["speaking",1443844800,"Open Source North"]
+["speaking",1444241700,"HOW Interactive Design Conference: Chicago"]
+["speaking",1444449600,"New England Drupalcamp (NEDCAMP)"]
+["speaking",1444968000,"DrupalCamp Atlanta 2015"] // Start position here 
+["speaking",1445227200,"ZendCon 2015"]
+
+When you have a compound key, the fields are sorted in the same order as they are in the key. So in this case, the results are sorted by role, date, and then title.
+Using the Reduce Function
+
+Suppose we want to display some statistics on how many sessions Lullabot staff are speaking at in total. We can use the reduce function to help aggregate the data. The reduce function is executed on the documents returned by the map function. Similar to the map function, the reduce function operates once on each document.
+
+With a few modifications, the map function looks like this:
+
+function(doc) {
+  if (typeof doc.type !== 'undefined' && doc.type === 'speakers') {
+    doc.events.forEach(function(event) {
+      emit([event.role, event.title], 1);
+    });
+  }
+}
+
+
+The resulting rows are of the following structure:
+
+{"id": "84e77231cae12a572cc6724241004f43", "key": ["attending","DrupalCon Barcelona 2015"], "value": 1}
+
+In order to count up all the speaking sessions, we can add a reduce function to our view in the design document:
+
+{
+  "views": {
+    "upcoming_talks": {
+      "map": "function(doc){ //map function operations..}",
+      "reduce": "function(key, values){ //reduce function operations..}"
+    }
+  }
+}
+
+Here is the reduce function:
+
+function(key, values) {
+  return sum(values);
+}
+
+The reduce function is called after the map function. The key parameter is an array containing all the keys returned by the map function and the id of the corresponding document. The values parameter contains an array of the values returned by the map function. When the function is run at index time, the values (in this case 1) are all added together using the the sum function to give us the number of sessions Lullabot are speaking at for each event.
+
+The results are grouped using the whole key. In this case, we are adding the values where both parts of the key (role and title) are the same. For example:
+
+["speaking", "DrupalCon Barcelona"]
+["speaking", "DrupalCon Barcelona"]
+["speaking", "DrupalCamp Atlanta 2015"]
+
+The above contents of the key array will return the values 2 sessions at DrupalCon Barcelona and 1 session at DrupalCamp Atlanta 2015.
+
+To return the number of total sessions overall, we can add the group_level parameter to the query.
+
+curl http://localhost:5984/lullabot/_design/docs/_view/upcoming_talks?startkey=["speaking"]&endkey=["speaking",{}]&group_level=1
+
+This will group the results by only the first part of the key and the reduce function will return the total number of sessions overall.
+Conclusion
