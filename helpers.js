@@ -7,18 +7,21 @@
  *  @author Christopher Roy christopher.cj.roy@gmail.com
  *  @date Jan/01/1970
  */
+function Helpers(config) {
+	this.config = config;
 
-function Helpers() {
-	this.http = require('http');
-	this.v8 = require('v8');
+	this.library = {}
+	this.library.http = require('http');
+	this.library.v8 = require('v8');
+	this.library.uuid = require('uuid').v4;
 }
 
 /************************************************************
  * One liners
  ************************************************************/
-Helpers.prototype.log = function(message) { if(!!this.globals.debugMode) console.log(message); };
+Helpers.prototype.log = function(message) { if(!!this.config.debugMode) console.log(message); };
 Helpers.prototype.onErrorGeneric = function(message) { this.log(message); };
-Helpers.prototype.uuid = function(onComplete, onError) { help.shell('uuid', onComplete, onError); } /* requires: npm install uuid; */
+Helpers.prototype.uuid = function() { return this.library.uuid(); } /* requires: npm install uuid; */
 
 
 /************************************************************
@@ -32,15 +35,18 @@ Helpers.prototype.onChunk = function() {};
 /************************************************************
  * Beautiful to write ONCE, else bore-hell.
  ************************************************************/
+/*
 Object.prototype.clone = function() {
-	return v8.deserialize(v8.serialize(this));
+	return Helpers.library.v8.deserialize(Helpers.library.v8.serialize(this));
 }
 
 Object.prototype.ea = function(fn, onComplete) {
-	let list = Object.prototype.keys(this);
-	forEach(propertyName in list)
-		fn(this[i], i, propertyName);
-	return this;
+  let list = Object.prototype.keys(this)
+
+  for(let i = 0; i < list.length; i++)
+    fn(this[i], i, propertyName);
+
+  return this;
 };
 
 Array.prototype.ea = function(fn, onComplete) {
@@ -48,13 +54,13 @@ Array.prototype.ea = function(fn, onComplete) {
   	fn(this[i], i);
   return this;
 };
-
+/**/
 /************************************************************
  * CLI, HTTP, & CURL type of things.
  ************************************************************/
  
 // Direct CLI command.
-Helpers.prototype.shell = async function(str, onComplete = Helpers.onCompete, onError = Helpers.onError) {
+Helpers.prototype.shell = async function(str, onComplete = this.onComplete, onError = this.onError) {
 	const { exec } = require("child_process");
 
 	exec(str, (error, stdout, stderr) => {
@@ -63,50 +69,49 @@ Helpers.prototype.shell = async function(str, onComplete = Helpers.onCompete, on
 	    else
 	    	onComplete(stdout);
 	});
-}
+};
 
 // CURL
-Helpers.prototype.curl = async function(str, onComplete = Helpers.onCompete, onError = Helpers.onError) {
+Helpers.prototype.curl = async function(str, onComplete = this.onComplete, onError = this.onError) {
 	this.shell('curl ' + str, onComplete, onError);
 }
 
-Helpers.prototype.httpDefaultPostableObject = function(obj = {}) {
-	return {
-		id: obj.id | Number.uuid(),
-		type: obj.type | 'no-type',
-	};
+Helpers.prototype.httpPostableObject = function(obj) {
+  return obj;
 };
 
-Helpers.prototype.httpDefaultOptions = function(userOptions = {}, postData = '') {
-	return {
-	  username: userOptions | 'admin',
-	  password: userOptions | 'password',
-	  db: userOptions.db | 'musiikki',
-	  hostname: userOptions.hostname | '127.0.0.1',
-	  port: userOptions.port | 5984,
-	  path: userOptions.path | '/',
-	  method: userOptions.method | 'POST',
-	  headers: userOption.headers | {
+Helpers.prototype.httpDefaultOptions = function(type = 'POST', str = '', postData = {}) {
+  return {
+      requestString: str,
+	  username: this.config.username,
+	  password: this.config.password,
+	  db: this.config.db,
+	  hostname: this.config.hostname,
+	  port: this.config.port,
+	  path: '/',
+	  domain: '',
+	  protocol: 'http',
+	  method: type,
+	  headers: {
 	    'Content-Type': 'application/x-www-form-urlencoded',
 	    'Content-Length': Buffer.byteLength(JSON.stringify(postData))
 	  }
-	};
+  };
 };
 
-Helpers.prototype.httpQuery = async function() {
-	// todo.
+Helpers.prototype.httpQuery = async function(obj, onComplete = this.onComplete, onError = this.onError) {
+  if(typeof obj == 'string')	
+	this.httpGet(this.httpDefaultOptions({ requestString : obj }), onComplete, onError);
+  else if(typeof obj.id != 'undefined')
+  	this.httpGet(this.httpDefaultOptions({ requestString : obj.id }), onComplete, onError);
 };
 
-Helpers.prototype.httpGet = async function (obj, httpOptions = {}, onComplete = Helpers.onCompete, onError = Helpers.onError, onChunk = Helpers.onChunk) {
-	this.curl(`-X GET ${ httpOptions.protocol }://${httpOptions.username}:${httpOptions.password}@${ httpOptions.host }:${httpOptions.port }/${httpOptions.requestString} -d ` + JSON.stringify(obj), onComplete, onError);
+Helpers.prototype.httpGet = async function (httpOptions = this.httpDefaultOptions(), onComplete = this.onCompete, onError = this.onError, onChunk = this.onChunk) {
+  this.curl(`-X GET ${ httpOptions.protocol }://${httpOptions.username}:${httpOptions.password}@${ httpOptions.hostname }:${httpOptions.port }/${httpOptions.db}/${httpOptions.requestString}`, onComplete, onError);
 }
 
-Helpers.prototype.httpPut = async function (obj, httpOptions = {}, onComplete = Helpers.onCompete, onError = Helpers.onError, onChunk = Helpers.onChunk) {
-	this.curl(`-X PUT ${ httpOptions.protocol }://${httpOptions.username}:${httpOptions.password}@${ httpOptions.host }:${httpOptions.port }/${httpOptions.requestString} -d ` + JSON.stringify(obj), onComplete, onError);
-}
-
-Helpers.prototype.httpPost = async function (obj, httpOptions = {}, onComplete = Helpers.onCompete, onError = Helpers.onError, onChunk = Helpers.onChunk) {
-	this.curl(`-H 'Content-Type: application/json' -X POST ${ httpOptions.protocol }://${httpOptions.username}:${httpOptions.password}@${ httpOptions.host }:${httpOptions.port }/${httpOptions.requestString} -d '` + JSON.stringify(obj) + "'", onComplete, onError);
+Helpers.prototype.httpPost = async function (obj, httpOptions = {}, onComplete = this.onCompete, onError = this.onError, onChunk = this.onChunk) {
+  this.curl(`-H 'Content-Type: application/json' -X POST ${ httpOptions.protocol }://${httpOptions.username}:${httpOptions.password}@${ httpOptions.hostname }:${httpOptions.port }/${httpOptions.db}/ -d '` + JSON.stringify(obj) + "'", onComplete, onError);
 };
 
 /*
@@ -163,4 +168,6 @@ Helpers.prototype.httpPost = async function (obj, userOptions = {},
 };
 */
 
-exports.help = Helpers;
+console.dir(Helpers);
+
+exports.exports = Helpers;
