@@ -1,0 +1,132 @@
+@font-face {
+  font-family: clarendon;
+  src: url(./fonts/clarendon.otf);
+}
+
+body {
+	background: #0001;
+}
+
+/* font-family: 'Enriqueta', serif; */
+.menu {
+	font-family: 'Enriqueta', serif;
+}
+
+.big-title {
+	font-family: clarendon;
+	font-size: 6rem;
+	color: 3e3e3e;
+    /*text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;*/
+}
+
+.yellow {
+	color: #FFcd00;
+	text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+}
+
+.border {
+	border: 1px solid #3e3e3e60;
+	padding: 2px;
+	padding-left: 3px;
+	padding-right: 3px;
+	border-radius: 3px;
+	background: #e3e3e377;	
+}
+
+.navigation {
+	padding-top: 0;
+	margin-left: 0;
+	padding-left: 0;
+	line-height: 1;
+}
+
+#background {
+	background: url(./img/sea.png);
+	min-height: 100%;
+	width: 100%;
+	z-index: -10;
+	position: absolute;
+	left: 0;
+	top: 0;
+	opacity: 0.05;
+}
+
+.icon-button.hover {
+	cursor: pointer;
+    background: #e3e3e399;
+}
+.fas-bars { margin-left: 0.35rem; }
+
+/*
+.container {
+	margin-top: 4rem;
+}*/
+
+.hamburger {
+	margin-left: 0.25rem;
+	margin-right: 0.25rem;
+}
+
+.rainbow {
+	background-image: linear-gradient(to right, #FF000010, #AA660010, #88880010, #00FF0010, #0000FF10, #2200FF10); 
+
+}
+
+#barrels {
+	width: 10rem;
+    opacity: 0.30;
+    float: right;
+    fill: #F00;
+    margin-top: 7rem;
+    margin-left: 3rem;
+}
+
+#cheers {
+	width: 10rem;
+	opacity: 0.30;
+	position: absolute;
+	top: 10rem;
+	right: 0;
+}
+
+.bulbs {
+	position: absolute;
+	right: 0;
+	top: 0;
+	opacity: 0.40;
+	height: 10rem;
+	z-index: -5;
+}
+
+.music-bars {
+	position: absolute;
+	left: 0;
+	top: 4.2rem;
+	opacity: 0.20;
+	height: 3rem;
+	z-index: -5;
+}
+
+div.rainbow-barrels {
+	background-image: linear-gradient(to right, #FF000008, #AA660008, #88880008, #00FF0008, #0000FF08, #2200FF08); 
+    -webkit-mask: url(./svg/barrels.svg) no-repeat center;
+    mask: url(./svg/barrels.svg) no-repeat center;
+}
+
+ul.navigation li {
+	float: left;
+	list-style: none;
+	line-height: 1;
+
+	padding: 0;
+	padding-left: 1rem;
+	padding-right: 1rem;
+
+	border-radius: 3px;
+
+	cursor: pointer;
+}
+
+ul.navigation li:hover { 
+	border-bottom: 1px solid #3e3e3e;
+}
