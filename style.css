@@ -20,7 +20,8 @@ body {
 }
 
 .yellow {
-	color: #FFcd00;
+	/*color: #FFcd00;*/
+	color: #FFFA;
 	text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
 }
 
@@ -129,4 +130,8 @@ ul.navigation li {
 
 ul.navigation li:hover { 
 	border-bottom: 1px solid #3e3e3e;
+}
+
+table#this-week td {
+	border-bottom: dotted #3e3e3e 1px;
 }
